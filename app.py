@@ -57,7 +57,7 @@ column_descriptions = {
 }
 
 # Displaying all columns vertically
-for col in df.columns:
+for col in merged_df_imputed.columns:
     desc = column_descriptions.get(col, "Description not available.")
     st.markdown(f"**{col}** — {desc}")
 st.dataframe(merged_df_imputed.head())
