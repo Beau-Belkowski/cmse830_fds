@@ -5,7 +5,7 @@ Link to streamlit app: https://nflpenalties.streamlit.app/
 
 What each file is and how to use it:
 
-CMSE_830_Midtern_Project.ipynb: This is the main jupyter notebook file for the project. All of the IDA, EDA, and streamlit app construction is done in this file. In order to run it properly CMSE_830_Midterm_dataset1.csv and CMSE_830_Midterm_dataset2.csv must be able to be loaded into this file. This file outputs merged_df_imputed.csv and app.py. I used python kernal version 3.12 (ipykernal) to run this code.
+CMSE_830_Midtern_Project.ipynb: This is the main jupyter notebook file for the project. All of the IDA, EDA, and streamlit app construction is done in this file. Not all of the IDA and EDA is shown in the streamlit app. In order to run it properly CMSE_830_Midterm_dataset1.csv and CMSE_830_Midterm_dataset2.csv must be able to be loaded into this file. This file outputs merged_df_imputed.csv and app.py. I used python kernal version 3.12 (ipykernal) to run this code.
 
 CMSE_830_Midterm_dataset1.csv: One of the csv files used to conduct the data analysis. Should be saved in same file as CMSE_830_Midtern_Project.ipynb so it can be loaded into the jupyter notebook. https://www.kaggle.com/datasets/nickcantalupa/nfl-team-data-2003-2023
 
