@@ -15,6 +15,51 @@ st.title("How Do Penalties Affect a Teams Success in the NFL?")
 # showing the dataframe
 st.write("### Dataset Preview")
 st.write("##### This dataset includes team metrics for full seasons. Each row in the dataset includes information for one team for one year. This data will be used to see how penalties during a season impacts a teams outcome.")
+
+st.write("Below is a list of all dataset columns with short descriptions:")
+
+# Creating dictionary of column descriptions
+column_descriptions = {
+    "Year": "The season year.",
+    "Accepted_Penalty_Count": "Total number of accepted penalties in all games.",
+    "Penalty_Yards": "Total yards penalized in the season.",
+    "Team_Penalty_Count": "Total penalties committed by the team.",
+    "Team_Penalty_Yards": "Total penalty yards against the team.",
+    "wins": "Number of games won by the team.",
+    "losses": "Number of games lost by the team.",
+    "win_loss_perc": "Winning percentage for the season.",
+    "points": "Total points scored by the team.",
+    "points_opp": "Total points scored by opponents.",
+    "points_diff": "Point differential (points scored − points allowed).",
+    "g": "Total games played in the season.",
+    "total_yards": "Total offensive yards gained by the team.",
+    "plays_offense": "Total number of offensive plays run.",
+    "yds_per_play_offense": "Average yards gained per offensive play.",
+    "turnovers": "Total number of turnovers committed (interceptions + fumbles lost).",
+    "fumbles_lost": "Number of times the team lost possession via fumble.",
+    "first_down": "Total number of first downs achieved.",
+    "pass_cmp": "Number of completed passes.",
+    "pass_att": "Number of pass attempts.",
+    "pass_yds": "Total passing yards gained.",
+    "pass_td": "Number of passing touchdowns.",
+    "pass_int": "Number of interceptions thrown.",
+    "pass_net_yds_per_att": "Net yards gained per pass attempt (including sacks).",
+    "pass_fd": "Number of first downs achieved via passing.",
+    "rush_att": "Total rushing attempts.",
+    "rush_yds": "Total rushing yards gained.",
+    "rush_td": "Number of rushing touchdowns.",
+    "rush_yds_per_att": "Average rushing yards per attempt.",
+    "rush_fd": "Number of first downs achieved via rushing.",
+    "score_pct": "Percentage of drives that resulted in scores.",
+    "turnover_pct": "Percentage of drives that ended in turnovers.",
+    "exp_pts_tot": "Total expected points contributed by the team.",
+    "Team": "Team name."
+}
+
+# Displaying all columns vertically
+for col in df.columns:
+    desc = column_descriptions.get(col, "Description not available.")
+    st.markdown(f"**{col}** — {desc}")
 st.dataframe(merged_df_imputed.head())
 
 # making a correlation plot for wins and penalty yards
