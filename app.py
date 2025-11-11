@@ -7,273 +7,712 @@ import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 
-# loading in final dataframe
+
+
+# loading in final dataframes
+stats = pd.read_csv("stats.csv")
+flags_orignal = pd.read_csv("CMSE_830_Midterm_dataset2.csv")
+flags = pd.read_csv("flags.csv")
 merged_df_imputed = pd.read_csv("merged_df_imputed.csv")
+merged_df = pd.read_csv("merged_df.csv")
 
 st.title("How Do Penalties Affect a Teams Success in the NFL?")
 
-# showing the dataframe
-st.write("### Dataset Preview")
-st.write("##### This dataset includes team metrics for full seasons. Each row in the dataset includes information for one team for one year. This data will be used to see how penalties during a season impacts a teams outcome.")
+tabs = st.tabs(["IDA", "EDA", "Discussion"])
 
-st.write("Below is a list of all dataset columns with short descriptions:")
+with tabs[0]: # Starting the IDA tab
 
-# Creating dictionary of column descriptions
-column_descriptions = {
-    "Year": "The season year.",
-    "Accepted_Penalty_Count": "Total number of accepted penalties in all games.",
-    "Penalty_Yards": "Total yards penalized in the season.",
-    "Team_Penalty_Count": "Total penalties committed by the team.",
-    "Team_Penalty_Yards": "Total penalty yards against the team.",
-    "wins": "Number of games won by the team.",
-    "losses": "Number of games lost by the team.",
-    "win_loss_perc": "Winning percentage for the season.",
-    "points": "Total points scored by the team.",
-    "points_opp": "Total points scored by opponents.",
-    "points_diff": "Point differential (points scored − points allowed).",
-    "g": "Total games played in the season.",
-    "total_yards": "Total offensive yards gained by the team.",
-    "plays_offense": "Total number of offensive plays run.",
-    "yds_per_play_offense": "Average yards gained per offensive play.",
-    "turnovers": "Total number of turnovers committed (interceptions + fumbles lost).",
-    "fumbles_lost": "Number of times the team lost possession via fumble.",
-    "first_down": "Total number of first downs achieved.",
-    "pass_cmp": "Number of completed passes.",
-    "pass_att": "Number of pass attempts.",
-    "pass_yds": "Total passing yards gained.",
-    "pass_td": "Number of passing touchdowns.",
-    "pass_int": "Number of interceptions thrown.",
-    "pass_net_yds_per_att": "Net yards gained per pass attempt (including sacks).",
-    "pass_fd": "Number of first downs achieved via passing.",
-    "rush_att": "Total rushing attempts.",
-    "rush_yds": "Total rushing yards gained.",
-    "rush_td": "Number of rushing touchdowns.",
-    "rush_yds_per_att": "Average rushing yards per attempt.",
-    "rush_fd": "Number of first downs achieved via rushing.",
-    "score_pct": "Percentage of drives that resulted in scores.",
-    "turnover_pct": "Percentage of drives that ended in turnovers.",
-    "exp_pts_tot": "Total expected points contributed by the team.",
-    "Team": "Team name."
-}
+    st.write("## IDA")
 
-# Displaying all columns vertically
-for col in merged_df_imputed.columns:
-    desc = column_descriptions.get(col, "Description not available.")
-    st.markdown(f"**{col}** — {desc}")
-st.dataframe(merged_df_imputed.head())
+    st.write("### Data Sets")
+    st.write("##### The first step of this project was reading in both of the data sets.")
+    st.write("##### This data set has team statistics for every year and every team for the years 2003-2023.")
+    st.dataframe(stats.head())
+    st.write("##### This data set has penalty totals for each game from 2009-2022.")
+    st.dataframe(flags_orignal.head())
+    st.write("### Data Cleaning")
+    st.write("##### The goal is to combine these two data sets so that we have penalty and stat totals for each team from each season spanning from 2003-2023. The first step is changing the flags data set from per game to per season and by team. To do this the home team data needs to be separated from the away team data making two different data sets. Then the numerical columns should be grouped by team and year summing all the numerical columns. This left me with two datasets each having penalty sums for each team in each year. The last step was adding together the home team and away team datasets to get full season totals. The resulting dataset included team penalty totals for each year as shown below:")
+    st.dataframe(flags.head())
+    st.write("##### The next step was combining the two datasets by team and year. The year had the same format in both data sets but the teams names were different. There was an additional level of complexity here because some teams have changed names and locations over the time period that our data is from. This means some teams had up to 5 different names over this span of time. For this reason the names in both data sets needed to be standardized before the data sets could be combined.")
 
-# making a correlation plot for wins and penalty yards
-x = merged_df_imputed['wins']
-y = merged_df_imputed['Team_Penalty_Yards']
+    # Compacting team naming system 
+    name_map = {
+        # AFC East
+        **dict.fromkeys(['Patriots', 'New England', 'New England Patriots'], 'New England Patriots'),
+        **dict.fromkeys(['Dolphins', 'Miami', 'Miami Dolphins'], 'Miami Dolphins'),
+        **dict.fromkeys(['Bills', 'Buffalo', 'Buffalo Bills'], 'Buffalo Bills'),
+        **dict.fromkeys(['Jets', 'N.Y. Jets', 'NY Jets', 'New York Jets'], 'New York Jets'),
 
-slope, intercept = np.polyfit(x, y, 1)
-r_value = np.corrcoef(x, y)[0, 1]
-r_squared = r_value**2
-equation = f"y = {slope:.2f}x + {intercept:.2f}   |   correlation = {r_value:.2f}"
+        # AFC North
+        **dict.fromkeys(['Ravens', 'Baltimore', 'Baltimore Ravens'], 'Baltimore Ravens'),
+        **dict.fromkeys(['Bengals', 'Cincinnati', 'Cincinnati Bengals'], 'Cincinnati Bengals'),
+        **dict.fromkeys(['Steelers', 'Pittsburgh', 'Pittsburgh Steelers'], 'Pittsburgh Steelers'),
+        **dict.fromkeys(['Browns', 'Cleveland', 'Cleveland Browns'], 'Cleveland Browns'),
 
-# Computing fitted line
-x_line = np.linspace(x.min(), x.max(), 100)
-y_line = slope * x_line + intercept
+        # AFC South
+        **dict.fromkeys(['Colts', 'Indianapolis', 'Indianapolis Colts'], 'Indianapolis Colts'),
+        **dict.fromkeys(['Titans', 'Tennessee', 'Tennessee Titans', 'Houston Oilers'], 'Tennessee Titans'),
+        **dict.fromkeys(['Jaguars', 'Jacksonville', 'Jacksonville Jaguars'], 'Jacksonville Jaguars'),
+        **dict.fromkeys(['Texans', 'Houston', 'Houston Texans'], 'Houston Texans'),
 
-fig = px.scatter(
-    merged_df_imputed,
-    x='wins',
-    y='Team_Penalty_Yards',
-    hover_data=['Team', 'Year'],  # show team + year on hover
-    opacity=0.7,
-    title="Relationship Between Wins and Team Penalty Yards",
-)
+        # AFC West
+        **dict.fromkeys(['Chiefs', 'Kansas City', 'Kansas City Chiefs'], 'Kansas City Chiefs'),
+        **dict.fromkeys(['Broncos', 'Denver', 'Denver Broncos'], 'Denver Broncos'),
+        **dict.fromkeys(['Raiders', 'Oakland', 'Oakland Raiders', 'Los Angeles Raiders', 'Las Vegas', 'Las Vegas Raiders'], 'Las Vegas Raiders'),
+        **dict.fromkeys(['Chargers', 'San Diego', 'San Diego Chargers', 'LA Chargers', 'Los Angeles Chargers'], 'Los Angeles Chargers'),
 
-# Adding regression line
-fig.add_scatter(
-    x=x_line,
-    y=y_line,
-    mode='lines',
-    name='Regression Line',
-    line=dict(color='red')
-)
+        # NFC East
+        **dict.fromkeys(['Eagles', 'Philadelphia', 'Philadelphia Eagles'], 'Philadelphia Eagles'),
+        **dict.fromkeys(['Cowboys', 'Dallas', 'Dallas Cowboys'], 'Dallas Cowboys'),
+        **dict.fromkeys(['Commanders', 'Washington', 'Washington Redskins', 'Washington Football Team', 'Washington Commanders'], 'Washington Commanders'),
+        **dict.fromkeys(['Giants', 'N.Y. Giants', 'NY Giants', 'New York Giants'], 'New York Giants'),
 
-# Annotating the equation on the plot
-fig.add_annotation(
-    xref="paper", yref="paper",
-    x=0.05, y=0.95,
-    text=equation,
-    showarrow=False,
-    font=dict(size=14, color="red")
-)
+        # NFC North
+        **dict.fromkeys(['Packers', 'Green Bay', 'Green Bay Packers'], 'Green Bay Packers'),
+        **dict.fromkeys(['Vikings', 'Minnesota', 'Minnesota Vikings'], 'Minnesota Vikings'),
+        **dict.fromkeys(['Bears', 'Chicago', 'Chicago Bears'], 'Chicago Bears'),
+        **dict.fromkeys(['Lions', 'Detroit', 'Detroit Lions'], 'Detroit Lions'),
 
-fig.update_layout(
-    xaxis_title="Wins",
-    yaxis_title="Team Penalty Yards",
-    template="simple_white",
-    hovermode="closest"
-)
+        # NFC South
+        **dict.fromkeys(['Panthers', 'Carolina', 'Carolina Panthers'], 'Carolina Panthers'),
+        **dict.fromkeys(['Saints', 'New Orleans', 'New Orleans Saints'], 'New Orleans Saints'),
+        **dict.fromkeys(['Buccaneers', 'Tampa Bay', 'Tampa Bay Buccaneers'], 'Tampa Bay Buccaneers'),
+        **dict.fromkeys(['Falcons', 'Atlanta', 'Atlanta Falcons'], 'Atlanta Falcons'),
 
-st.plotly_chart(fig, use_container_width=True)
-st.write(f"**Regression Equation:** {equation}")
+        # NFC West
+        **dict.fromkeys(['Cardinals', 'Arizona', 'Arizona Cardinals'], 'Arizona Cardinals'),
+        **dict.fromkeys(['Seahawks', 'Seattle', 'Seattle Seahawks'], 'Seattle Seahawks'),
+        **dict.fromkeys(['49ers', 'San Francisco', 'San Francisco 49ers'], 'San Francisco 49ers'),
+        **dict.fromkeys(['Rams', 'St. Louis', 'St. Louis Rams', 'LA Rams', 'Los Angeles Rams'], 'Los Angeles Rams'),
+    }
+    st.write("##### Type or select any version of a team name — historical or short — and get the standardized full name. Make sure to capitalize the team name you use.")
 
-st.write("##### This scatterplot shows that there is almost no correlation between wins and Penalty yards directly. However, this does not necessarily mean that there is no causation. In the next plot we will show this same relationship with a different method.")
+    # Adding a dropdown or free text input
+    user_input = st.text_input("Enter a team name:", placeholder="e.g. NY Jets, Oakland, Washington Redskins")
 
-# Aggregating by team
-team_summary = merged_df_imputed.groupby('Team').agg({
-    'Team_Penalty_Yards': 'mean',
-    'wins': 'mean'
-}).reset_index()
+    if user_input:
+        normalized = name_map.get(user_input.strip(), "Unknown Team")
+        st.success(f"**Standardized Name:** {normalized}")
 
-# Sorting by penalties
-team_summary = team_summary.sort_values('Team_Penalty_Yards')
+    st.write("##### This is a list of all of the final standardized names used for both datasets")
 
-# Computing linear regression for straight trend line
-x = team_summary['Team_Penalty_Yards']
-y = team_summary['wins']
-slope, intercept = np.polyfit(x, y, 1)
-trend_line = slope * x + intercept
+    with st.expander("Show all standardized team names"):
+        st.write(sorted(set(name_map.values())))
 
-# creating a plot showing wins and penalty yards for each team over all seasons
-fig = go.Figure()
+    st.write("##### After combining the two data sets this is what the result looks like.")
+    st.dataframe(merged_df.head())
+    st.write("### Data Imputation")
+    st.write("##### Now that the two data sets have been combined there are many rows with missing values. This is because the stats dataset covers years from 2003-2023 while the flags dataset only goes from 2009-2022. To fix this I will use stochastic regression to impute the missing values. This will allow for the data to be imputed accurately while still having same variance. The standard deviation of the imputed columns are as follows: Accepted_Penalty_Count residual std = 5.9150, Penalty_Yards residual std = 52.3693, Team_Penalty_Count residual std = 4.1602, Team_Penalty_Yards residual std = 38.1223. After imputation the data set looks like this and it is ready for EDA.")
+    st.dataframe(merged_df_imputed.head())
 
-# creating bar chart for penalties
-fig.add_trace(go.Bar(
-    x=team_summary['Team'],
-    y=team_summary['Team_Penalty_Yards'],
-    name='Avg Team Penaltiy Yards',
-    marker_color='salmon',
-    yaxis='y1',
-    hovertemplate="<b>%{x}</b><br>Avg Penalties: %{y:.2f}<extra></extra>"
-))
+with tabs[1]:
+    st.write("## EDA")
+    st.write("##### In this section I will explore the data using a variety of plots. All plots will be shown here regardless of if they turn out to be useful for answering the overarching project question or not. The plots that turn out to be the most relevant will be used in the discussion section.")
 
-    # adding line for average wins
-fig.add_trace(go.Scatter(
-    x=team_summary['Team'],
-    y=team_summary['wins'],
-    mode='lines+markers',
-    name='Avg Wins',
-    marker=dict(color='blue', size=8),
-    line=dict(color='blue', width=2),
-    yaxis='y2',
-    hovertemplate="<b>%{x}</b><br>Avg Wins: %{y:.2f}<extra></extra>"
-))
+    st.write("##### When doing exploratory data analysis I always like to start by looking at a correlation matrix to see where I might be able to find relationships within the data. As you can see here, the penalty variables have very small correlations with all the other variables so finding obvious relationships may be a difficult task. For this correlation matrix there are a lot of variables and the small size makes it hard to read. To help with this you can hover your cursor over the matrix and it will tell you the variables you are hovering over and their correlation.")
+    # Computing correlation matrix
+    corr = merged_df_imputed.corr(numeric_only=True)
 
-    # adding regression trend line to highlight trend
-fig.add_trace(go.Scatter(
-    x=team_summary['Team'],
-    y=trend_line,
-    mode='lines',
-    name='Trend Line',
-    line=dict(color='black', dash='dash'),
-    yaxis='y2',
-    hovertemplate="<b>%{x}</b><br>Trend Wins: %{y:.2f}<extra></extra>"
-))
-
-    # customizing the layout
-fig.update_layout(
-        title=dict(
-            text="Average Team Penalty Yards vs Wins (2003–2023)",
-            x=0.15,
-            font=dict(size=20)
-        ),
-        xaxis=dict(title='Team', tickangle=45),
-        yaxis=dict(title='Avg Team Penalty Yards', color='salmon'),
-        yaxis2=dict(
-            title='Avg Wins',
-            overlaying='y',
-            side='right',
-            color='blue'
-        ),
-        legend=dict(
-            orientation='h',
-            yanchor='top',
-            y=1.1,
-            xanchor='center',
-            x=0.5,
-            font=dict(size=14)
-        ),
-        hovermode='x unified',
-        template='plotly_white',
-        width=2200,
-        height=600,
-        margin=dict(l=80, r=80, t=100, b=150)
+    # Creating interactive Plotly heatmap
+    fig = px.imshow(
+        corr,
+        text_auto=".2f",
+        color_continuous_scale='RdBu_r',
+        aspect='auto',
+        title="Correlation Plot of Numeric Variables"
     )
 
-st.plotly_chart(fig, use_container_width=True)
+    fig.update_layout(
+        width=1000,
+        height=700,
+        title_x=0.25,
+        title_font_size=20
+    )
 
-st.write("##### This plot clearly shows that the teams with more penalty yards have less wins. The dashed black line smooths out the noisy data to reveal the underlying trend in the data. This plot proves that there is at least some relationship between the penalty yards and wins. This relationship may be better explained by including total yards in the discussion.")
+    # Displaying in Streamlit
+    st.plotly_chart(fig, use_container_width=True)
 
-# showing the relationship between total yards and wins
-x = merged_df_imputed['wins']
-y = merged_df_imputed['total_yards']
+    st.write("##### This is a more user friendly option than the massive correlation matrix. Here you can select the variables you want to look at and it will show you the distributions of those variables and the correlation scatterplot for each combination.")
 
-slope, intercept = np.polyfit(x, y, 1)
-r_value = np.corrcoef(x, y)[0, 1]
-r_squared = r_value**2
-equation = f"y = {slope:.2f}x + {intercept:.2f}   |   correlation = {r_value:.2f}"
+    # selecting variables
+    default_vars = ['Team_Penalty_Count', 'Team_Penalty_Yards', 'wins', 'win_loss_perc', 'points_diff']
+    available_vars = list(merged_df_imputed.select_dtypes(include='number').columns)
 
-# Computing fitted line
-x_line = np.linspace(x.min(), x.max(), 100)
-y_line = slope * x_line + intercept
+    selected_vars = st.multiselect(
+        "Select numeric variables to include in the pairplot:",
+        options=available_vars,
+        default=default_vars,
+        key="pairplot_vars"
+    )
 
-fig = px.scatter(
-    merged_df_imputed,
-    x='wins',
-    y='total_yards',
-    hover_data=['Team', 'Year'],  # show team + year on hover
-    opacity=0.7,
-    title="Relationship Between Wins and Total Yards",
-)
+    # Generating the plot only if at least 2 variables selected 
+    if len(selected_vars) >= 2:
+        fig = sns.pairplot(merged_df_imputed[selected_vars], diag_kind='kde')
+        fig.fig.suptitle("Relationships Among Selected Variables", y=1.02)
+        st.pyplot(fig)
+    else:
+        st.warning("Please select at least two numeric variables to display the pairplot.")
 
-# Adding regression line
-fig.add_scatter(
-    x=x_line,
-    y=y_line,
-    mode='lines',
-    name='Regression Line',
-    line=dict(color='red')
-)
+    st.write("##### I am most interested in the relatinship between penalty yards and winning because these two variables are directly related to my overall project question. For this reason I chose to plot the correlation scatter plot for these two variables and include the correlation line. You can hover over each point to see the team, year, and specific values for that point.")
 
-# Annotating the equation on the plot
-fig.add_annotation(
-    xref="paper", yref="paper",
-    x=0.05, y=0.95,
-    text=equation,
-    showarrow=False,
-    font=dict(size=14, color="red")
-)
-fig.update_layout(
-    xaxis_title="Wins",
-    yaxis_title="total_yards",
-    template="simple_white",
-    hovermode="closest"
-)
-st.plotly_chart(fig, use_container_width=True)
+    # making a correlation plot for wins and penalty yards
+    x = merged_df_imputed['wins']
+    y = merged_df_imputed['Team_Penalty_Yards']
 
-st.write("##### The consequence of getting a penalty is always a loss of yards but the amount of yard varies based on the type of penalty. This means that getting a penalty directly reduces the total yards of a team, which in turn indirectly affects if the team wins or not. ")
-st.write("##### On average 13.7% of the yards a team earn end up being lost due to penalties. A team loses an average of 747 yards due to penalties each season. However, teams earn an average of 5464 yards per season. This goes to show that teams earn way more yards than they lose due to penalties which is why penalty yards has a small correlation with winning.")
+    slope, intercept = np.polyfit(x, y, 1)
+    r_value = np.corrcoef(x, y)[0, 1]
+    r_squared = r_value**2
+    equation = f"y = {slope:.2f}x + {intercept:.2f}   |   correlation = {r_value:.2f}"
 
-# creating an interative plot that shows the distribution of the percentage of total yards lost die to penalties
-merged_df_imputed['percent_yards_lost'] = (
-    merged_df_imputed['Team_Penalty_Yards'] /
-    (merged_df_imputed['Team_Penalty_Yards'] + merged_df_imputed['total_yards'])
-)
+    # Computing fitted line
+    x_line = np.linspace(x.min(), x.max(), 100)
+    y_line = slope * x_line + intercept
 
-st.sidebar.header("Plot Settings")
-bins = st.sidebar.slider("Number of bins", min_value=5, max_value=50, value=20)
-show_kde = st.sidebar.checkbox("Show KDE Curve", value=True)
+    fig = px.scatter(
+        merged_df_imputed,
+        x='wins',
+        y='Team_Penalty_Yards',
+        hover_data=['Team', 'Year'],  # show team + year on hover
+        opacity=0.7,
+        title="Relationship Between Wins and Team Penalty Yards",
+    )
 
-mean_ratio = merged_df_imputed['percent_yards_lost'].mean()
-st.write(f"**Average percent of yards lost to penalties:** {mean_ratio:.2%}")
+    # Adding regression line
+    fig.add_scatter(
+        x=x_line,
+        y=y_line,
+        mode='lines',
+        name='Regression Line',
+        line=dict(color='red')
+    )
 
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.histplot(
-    merged_df_imputed['percent_yards_lost'],
-    bins=bins,
-    kde=show_kde,
-    color='green',
-    ax=ax
-)
-ax.set_title("Distribution of Percent of Yards Lost Due to Penalties", fontsize=14)
-ax.set_xlabel("Percent of Total Yards Lost")
-ax.set_ylabel("Count")
-ax.grid(True, linestyle='--', alpha=0.4)
+    # Annotating the equation on the plot
+    fig.add_annotation(
+        xref="paper", yref="paper",
+        x=0.05, y=0.95,
+        text=equation,
+        showarrow=False,
+        font=dict(size=14, color="red")
+    )
 
-st.pyplot(fig)
+    fig.update_layout(
+        xaxis_title="Wins",
+        yaxis_title="Team Penalty Yards",
+        template="simple_white",
+        hovermode="closest"
+    )
+
+    st.plotly_chart(fig, use_container_width=True, key="corr")
+    st.write(f"**Regression Equation:** {equation}")
+
+    st.write("##### This plot show the distribution of the percentage of total yards that are lost due to penalties. This information is helpful for grasping how much losing penalty yards affects a teams total yards. You can use the slider to change how many bins the histogram has.")
+
+    # Calculate metric
+    merged_df_imputed['percent_yards_lost'] = (
+        merged_df_imputed['Team_Penalty_Yards'] /
+        (merged_df_imputed['Team_Penalty_Yards'] + merged_df_imputed['total_yards'])
+    )
+
+    # Creating the initial plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.histplot(
+        merged_df_imputed['percent_yards_lost'],
+        bins=20,  # temporary default
+        kde=True,
+        color='green',
+        ax=ax
+    )
+    ax.set_title("Distribution of Percent of Yards Lost Due to Penalties", fontsize=14)
+    ax.set_xlabel("Percent of Total Yards Lost")
+    ax.set_ylabel("Count")
+    ax.grid(True, linestyle='--', alpha=0.4)
+
+    # Adding controls directly below the plot
+    st.markdown("##### Plot Settings")
+    bins = st.slider("Number of bins", min_value=5, max_value=50, value=20, key="bins_main")
+    show_kde = st.checkbox("Show KDE Curve", value=True, key="checkbox_main")
+
+    # Updating the plot with new settings
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.histplot(
+        merged_df_imputed['percent_yards_lost'],
+        bins=bins,
+        kde=show_kde,
+        color='green',
+        ax=ax
+    )
+    ax.set_title("Distribution of Percent of Yards Lost Due to Penalties", fontsize=14)
+    ax.set_xlabel("Percent of Total Yards Lost")
+    ax.set_ylabel("Count")
+    ax.grid(True, linestyle='--', alpha=0.4)
+
+    # Displaying figure
+    st.pyplot(fig)
+
+    # Displaying summary info
+    mean_ratio = merged_df_imputed['percent_yards_lost'].mean()
+    st.write(f"**Average percent of yards lost to penalties:** {mean_ratio:.2%}")
+
+    st.write("##### This plot is related to the histogram above. It shows how the percent of total yards lost due to penalties has changed over the seasons. As you can see the it remains between 13% and 17% making it a pretty consistent time trend. You can use the sliding bar above the plot to adjust which years are shown in the plot.")
+
+    # Adding user controls 
+    year_range = st.slider(
+        "Select Year Range",
+        min_value=int(merged_df_imputed['Year'].min()),
+        max_value=int(merged_df_imputed['Year'].max()),
+        value=(2003, 2023),
+        key="year_slider"
+    )
+
+    show_grid = st.checkbox("Show Grid", value=True, key="show_grid")
+    show_points = st.checkbox("Show Data Points", value=True, key="show_points")
+
+    # Computing yearly ratios
+    yearly_ratio = (
+        merged_df_imputed.groupby('Year')['Team_Penalty_Yards'].sum() /
+        merged_df_imputed.groupby('Year')['total_yards'].sum()
+    )
+
+    # Filtering by year range
+    yearly_ratio = yearly_ratio.loc[
+        (yearly_ratio.index >= year_range[0]) & (yearly_ratio.index <= year_range[1])
+    ]
+
+    # Creating plot 
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(
+        yearly_ratio.index,
+        yearly_ratio.values * 100,  # convert to percent
+        marker='o' if show_points else '',
+        color='steelblue',
+        linewidth=2
+    )
+    ax.set_title("League-Wide Trend of Yards Lost to Penalties (2003–2023)", fontsize=14)
+    ax.set_ylabel("Percent of Yards Lost (%)", fontsize=12)
+    ax.set_xlabel("Year", fontsize=12)
+    ax.grid(show_grid, linestyle='--', alpha=0.5)
+
+    # Displaying plot in Streamlit 
+    st.pyplot(fig)
+
+    st.write("##### This plot shows the average number of wins for each team and the average number of penalty yards for each team over the 20 year span of the data. This graph clearly shows that the teams with the most penalty yards typically also have the most losses. To see precise values hover your cursor over the graph.")
+    # Aggregating by team
+    team_summary = merged_df_imputed.groupby('Team').agg({
+        'Team_Penalty_Yards': 'mean',
+        'wins': 'mean'
+    }).reset_index()
+
+    # Sorting by penalties
+    team_summary = team_summary.sort_values('Team_Penalty_Yards')
+
+    # Computing linear regression for straight trend line
+    x = team_summary['Team_Penalty_Yards']
+    y = team_summary['wins']
+    slope, intercept = np.polyfit(x, y, 1)
+    trend_line = slope * x + intercept
+
+    # creating a plot showing wins and penalty yards for each team over all seasons
+    fig = go.Figure()
+
+    # creating bar chart for penalties
+    fig.add_trace(go.Bar(
+        x=team_summary['Team'],
+        y=team_summary['Team_Penalty_Yards'],
+        name='Avg Team Penaltiy Yards',
+        marker_color='salmon',
+        yaxis='y1',
+        hovertemplate="<b>%{x}</b><br>Avg Penalties: %{y:.2f}<extra></extra>"
+    ))
+
+        # adding line for average wins
+    fig.add_trace(go.Scatter(
+        x=team_summary['Team'],
+        y=team_summary['wins'],
+        mode='lines+markers',
+        name='Avg Wins',
+        marker=dict(color='blue', size=8),
+        line=dict(color='blue', width=2),
+        yaxis='y2',
+        hovertemplate="<b>%{x}</b><br>Avg Wins: %{y:.2f}<extra></extra>"
+    ))
+    # adding regression trend line to highlight trend
+    fig.add_trace(go.Scatter(
+        x=team_summary['Team'],
+        y=trend_line,
+        mode='lines',
+        name='Trend Line',
+        line=dict(color='black', dash='dash'),
+        yaxis='y2',
+        hovertemplate="<b>%{x}</b><br>Trend Wins: %{y:.2f}<extra></extra>"
+    ))
+
+        # customizing the layout
+    fig.update_layout(
+            title=dict(
+                text="Average Team Penalty Yards vs Wins (2003–2023)",
+                x=0.15,
+                font=dict(size=20)
+            ),
+            xaxis=dict(title='Team', tickangle=45),
+            yaxis=dict(title='Avg Team Penalty Yards', color='salmon'),
+            yaxis2=dict(
+                title='Avg Wins',
+                overlaying='y',
+                side='right',
+                color='blue'
+            ),
+            legend=dict(
+                orientation='h',
+                yanchor='top',
+                y=1.1,
+                xanchor='center',
+                x=0.5,
+                font=dict(size=14)
+            ),
+            hovermode='x unified',
+            template='plotly_white',
+            width=2200,
+            height=600,
+            margin=dict(l=80, r=80, t=100, b=150)
+        )
+
+    st.plotly_chart(fig, use_container_width=True, key = "plot")
+
+    st.write("##### This plot shows the distributions of team penalty counts across seasons using box plots. This plot would be useful for comparing a few teams to see how their penalty counts differ. You can select which teams you would like included in the plot.")
+    # Letting user choose variables interactively 
+    teams = merged_df_imputed['Team'].unique()
+    selected_teams = st.multiselect(
+        "Select teams to include:",
+        options=teams,
+        default=teams,
+        key="team_boxplot"
+    )
+
+    if len(selected_teams) > 0:
+        filtered_df = merged_df_imputed[merged_df_imputed['Team'].isin(selected_teams)]
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.boxplot(
+            data=filtered_df,
+            x='Team',
+            y='Team_Penalty_Count',
+            palette='coolwarm',
+            ax=ax
+        )
+        ax.set_title("Distribution of Team Penalty Counts Across Seasons", fontsize=14)
+        ax.set_xlabel("Team")
+        ax.set_ylabel("Penalty Count per Season")
+        plt.xticks(rotation=90)
+        st.pyplot(fig)
+    else:
+        st.warning("Please select at least one team to display the boxplot.")
+
+    st.write("##### This plot shows the scatter plot comparing wins and team penalty yards. The unique thing about this plot is that it highlights all of the super bowl winners. The super bowl winner is considered to be one of the best teams from each season so this plot helps highlight how the best teams differ from all the other teams. You can choose which super bowl winner to display by choosing the year that each champion won.")
+    # Super Bowl winners data 
+    super_bowl_winners = [
+        {"Year": 2003, "Team": "Tampa Bay Buccaneers", "SuperBowl_Winner": 1},
+        {"Year": 2004, "Team": "New England Patriots", "SuperBowl_Winner": 1},
+        {"Year": 2005, "Team": "New England Patriots", "SuperBowl_Winner": 1},
+        {"Year": 2006, "Team": "Pittsburgh Steelers", "SuperBowl_Winner": 1},
+        {"Year": 2007, "Team": "Indianapolis Colts", "SuperBowl_Winner": 1},
+        {"Year": 2008, "Team": "New York Giants", "SuperBowl_Winner": 1},
+        {"Year": 2009, "Team": "Pittsburgh Steelers", "SuperBowl_Winner": 1},
+        {"Year": 2010, "Team": "New Orleans Saints", "SuperBowl_Winner": 1},
+        {"Year": 2011, "Team": "Green Bay Packers", "SuperBowl_Winner": 1},
+        {"Year": 2012, "Team": "New York Giants", "SuperBowl_Winner": 1},
+        {"Year": 2013, "Team": "Baltimore Ravens", "SuperBowl_Winner": 1},
+        {"Year": 2014, "Team": "Seattle Seahawks", "SuperBowl_Winner": 1},
+        {"Year": 2015, "Team": "New England Patriots", "SuperBowl_Winner": 1},
+        {"Year": 2016, "Team": "Denver Broncos", "SuperBowl_Winner": 1},
+        {"Year": 2017, "Team": "New England Patriots", "SuperBowl_Winner": 1},
+        {"Year": 2018, "Team": "Philadelphia Eagles", "SuperBowl_Winner": 1},
+        {"Year": 2019, "Team": "New England Patriots", "SuperBowl_Winner": 1},
+        {"Year": 2020, "Team": "Kansas City Chiefs", "SuperBowl_Winner": 1},
+        {"Year": 2021, "Team": "Tampa Bay Buccaneers", "SuperBowl_Winner": 1},
+        {"Year": 2022, "Team": "Los Angeles Rams", "SuperBowl_Winner": 1},
+        {"Year": 2023, "Team": "Kansas City Chiefs", "SuperBowl_Winner": 1},
+    ]
+
+    # Merging data 
+    winners_df = pd.DataFrame(super_bowl_winners)
+    df = pd.merge(merged_df_imputed, winners_df, on=["Year", "Team"], how="left")
+    df["SuperBowl_Winner"] = df["SuperBowl_Winner"].fillna(0).astype(int)
+
+    # Adding inline filter controls 
+    st.markdown("### 🔍 Filter Options")
+    col1, col2 = st.columns([1, 3])
+
+    with col1:
+        st.write("")  # spacer
+
+    with col2:
+        years = sorted(df["Year"].unique())
+        selected_years = st.multiselect(
+            "Select Years to Display",
+            options=years,
+            default=years,
+            key="year_selector_scatter"
+        )
+
+    # Filtering data 
+    filtered_df = df[df["Year"].isin(selected_years)]
+
+    # Plotting
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.scatterplot(
+        data=filtered_df,
+        x="wins",
+        y="Team_Penalty_Yards",
+        hue="SuperBowl_Winner",
+        palette={0: "green", 1: "red"},
+        alpha=0.7,
+        ax=ax
+    )
+    ax.set_title("Wins vs Team Penalty Yards (Super Bowl Winners Highlighted)", fontsize=14)
+    ax.set_xlabel("Wins")
+    ax.set_ylabel("Team Penalty Yards")
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+    st.pyplot(fig)
+
+
+with tabs[2]:
+    # showing the dataframe
+    st.write("### Dataset Preview")
+    st.write("##### This dataset includes team metrics for full seasons. Each row in the dataset includes information for one team for one year. This data will be used to see how penalties during a season impacts a teams outcome.")
+    st.dataframe(merged_df_imputed.head())
+    st.write("##### The next step was combining the two datasets by team and year")
+
+    # making a correlation plot for wins and penalty yards
+    x = merged_df_imputed['wins']
+    y = merged_df_imputed['Team_Penalty_Yards']
+
+    slope, intercept = np.polyfit(x, y, 1)
+    r_value = np.corrcoef(x, y)[0, 1]
+    r_squared = r_value**2
+    equation = f"y = {slope:.2f}x + {intercept:.2f}   |   correlation = {r_value:.2f}"
+
+    # Computing fitted line
+    x_line = np.linspace(x.min(), x.max(), 100)
+    y_line = slope * x_line + intercept
+
+    fig = px.scatter(
+        merged_df_imputed,
+        x='wins',
+        y='Team_Penalty_Yards',
+        hover_data=['Team', 'Year'],  # show team + year on hover
+        opacity=0.7,
+        title="Relationship Between Wins and Team Penalty Yards",
+    )
+
+    # Adding regression line
+    fig.add_scatter(
+        x=x_line,
+        y=y_line,
+        mode='lines',
+        name='Regression Line',
+        line=dict(color='red')
+    )
+
+    # Annotating the equation on the plot
+    fig.add_annotation(
+        xref="paper", yref="paper",
+        x=0.05, y=0.95,
+        text=equation,
+        showarrow=False,
+        font=dict(size=14, color="red")
+    )
+
+    fig.update_layout(
+        xaxis_title="Wins",
+        yaxis_title="Team Penalty Yards",
+        template="simple_white",
+        hovermode="closest"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+    st.write(f"**Regression Equation:** {equation}")
+
+    st.write("##### This scatterplot shows that there is almost no correlation between wins and Penalty yards directly. However, this does not necessarily mean that there is no causation. In the next plot we will show this same relationship with a different method.")
+
+    # Aggregating by team
+    team_summary = merged_df_imputed.groupby('Team').agg({
+        'Team_Penalty_Yards': 'mean',
+        'wins': 'mean'
+    }).reset_index()
+
+    # Sorting by penalties
+    team_summary = team_summary.sort_values('Team_Penalty_Yards')
+
+    # Computing linear regression for straight trend line
+    x = team_summary['Team_Penalty_Yards']
+    y = team_summary['wins']
+    slope, intercept = np.polyfit(x, y, 1)
+    trend_line = slope * x + intercept
+
+    # creating a plot showing wins and penalty yards for each team over all seasons
+    fig = go.Figure()
+
+    # creating bar chart for penalties
+    fig.add_trace(go.Bar(
+        x=team_summary['Team'],
+        y=team_summary['Team_Penalty_Yards'],
+        name='Avg Team Penaltiy Yards',
+        marker_color='salmon',
+        yaxis='y1',
+        hovertemplate="<b>%{x}</b><br>Avg Penalties: %{y:.2f}<extra></extra>"
+    ))
+
+        # adding line for average wins
+    fig.add_trace(go.Scatter(
+        x=team_summary['Team'],
+        y=team_summary['wins'],
+        mode='lines+markers',
+        name='Avg Wins',
+        marker=dict(color='blue', size=8),
+        line=dict(color='blue', width=2),
+        yaxis='y2',
+        hovertemplate="<b>%{x}</b><br>Avg Wins: %{y:.2f}<extra></extra>"
+    ))
+
+        # adding regression trend line to highlight trend
+    fig.add_trace(go.Scatter(
+        x=team_summary['Team'],
+        y=trend_line,
+        mode='lines',
+        name='Trend Line',
+        line=dict(color='black', dash='dash'),
+        yaxis='y2',
+        hovertemplate="<b>%{x}</b><br>Trend Wins: %{y:.2f}<extra></extra>"
+    ))
+
+        # customizing the layout
+    fig.update_layout(
+            title=dict(
+                text="Average Team Penalty Yards vs Wins (2003–2023)",
+                x=0.15,
+                font=dict(size=20)
+            ),
+            xaxis=dict(title='Team', tickangle=45),
+            yaxis=dict(title='Avg Team Penalty Yards', color='salmon'),
+            yaxis2=dict(
+                title='Avg Wins',
+                overlaying='y',
+                side='right',
+                color='blue'
+            ),
+            legend=dict(
+                orientation='h',
+                yanchor='top',
+                y=1.1,
+                xanchor='center',
+                x=0.5,
+                font=dict(size=14)
+            ),
+            hovermode='x unified',
+            template='plotly_white',
+            width=2200,
+            height=600,
+            margin=dict(l=80, r=80, t=100, b=150)
+        )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("##### This plot clearly shows that the teams with more penalty yards have less wins. The dashed black line smooths out the noisy data to reveal the underlying trend in the data. This plot proves that there is at least some relationship between the penalty yards and wins. This relationship may be better explained by including total yards in the discussion.")
+
+    # showing the relationship between total yards and wins
+    x = merged_df_imputed['wins']
+    y = merged_df_imputed['total_yards']
+
+    slope, intercept = np.polyfit(x, y, 1)
+    r_value = np.corrcoef(x, y)[0, 1]
+    r_squared = r_value**2
+    equation = f"y = {slope:.2f}x + {intercept:.2f}   |   correlation = {r_value:.2f}"
+
+    # Computing fitted line
+    x_line = np.linspace(x.min(), x.max(), 100)
+    y_line = slope * x_line + intercept
+
+    fig = px.scatter(
+        merged_df_imputed,
+        x='wins',
+        y='total_yards',
+        hover_data=['Team', 'Year'],  # show team + year on hover
+        opacity=0.7,
+        title="Relationship Between Wins and Total Yards",
+    )
+
+    # Adding regression line
+    fig.add_scatter(
+        x=x_line,
+        y=y_line,
+        mode='lines',
+        name='Regression Line',
+        line=dict(color='red')
+    )
+
+    # Annotating the equation on the plot
+    fig.add_annotation(
+        xref="paper", yref="paper",
+        x=0.05, y=0.95,
+        text=equation,
+        showarrow=False,
+        font=dict(size=14, color="red")
+    )
+    fig.update_layout(
+        xaxis_title="Wins",
+        yaxis_title="total_yards",
+        template="simple_white",
+        hovermode="closest"
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.write("##### The consequence of getting a penalty is always a loss of yards but the amount of yard varies based on the type of penalty. This means that getting a penalty directly reduces the total yards of a team, which in turn indirectly affects if the team wins or not. ")
+    st.write("##### On average 13.7% of the yards a team earn end up being lost due to penalties. A team loses an average of 747 yards due to penalties each season. However, teams earn an average of 5464 yards per season. This goes to show that teams earn way more yards than they lose due to penalties which is why penalty yards has a small correlation with winning.")
+
+    # Calculating metrics
+    merged_df_imputed['percent_yards_lost'] = (
+        merged_df_imputed['Team_Penalty_Yards'] /
+        (merged_df_imputed['Team_Penalty_Yards'] + merged_df_imputed['total_yards'])
+    )
+
+    # Displaying summary info
+    mean_ratio = merged_df_imputed['percent_yards_lost'].mean()
+    st.write(f"**Average percent of yards lost to penalties:** {mean_ratio:.2%}")
+
+    # Creating the initial plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.histplot(
+        merged_df_imputed['percent_yards_lost'],
+        bins=20,  # temporary default
+        kde=True,
+        color='green',
+        ax=ax
+    )
+    ax.set_title("Distribution of Percent of Yards Lost Due to Penalties", fontsize=14)
+    ax.set_xlabel("Percent of Total Yards Lost")
+    ax.set_ylabel("Count")
+    ax.grid(True, linestyle='--', alpha=0.4)
+
+    # Adding controls directly below the plot
+    st.markdown("##### Plot Settings")
+    bins = st.slider("Number of bins", min_value=5, max_value=50, value=20, key="bins_secondary")
+    show_kde = st.checkbox("Show KDE Curve", value=True, key="checkbox_secondary")
+
+    # Updating the plot with new settings
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.histplot(
+        merged_df_imputed['percent_yards_lost'],
+        bins=bins,
+        kde=show_kde,
+        color='green',
+        ax=ax
+    )
+    ax.set_title("Distribution of Percent of Yards Lost Due to Penalties", fontsize=14)
+    ax.set_xlabel("Percent of Total Yards Lost")
+    ax.set_ylabel("Count")
+    ax.grid(True, linestyle='--', alpha=0.4)
+
+    # displaying figure
+    st.pyplot(fig)
 
