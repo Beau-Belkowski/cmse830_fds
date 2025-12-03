@@ -15,25 +15,35 @@ flags_orignal = pd.read_csv("CMSE_830_Midterm_dataset2.csv")
 flags = pd.read_csv("flags.csv")
 merged_df_imputed = pd.read_csv("merged_df_imputed.csv")
 merged_df = pd.read_csv("merged_df.csv")
+superbowls = pd.read_csv("superbowls.csv")
+engineered_features = pd.read_csv("engineered_features.csv")
 
 st.title("How Do Penalties Affect a Teams Success in the NFL?")
 
-tabs = st.tabs(["IDA", "EDA", "Discussion"])
+tabs = st.tabs(["Introduction", "IDA", "EDA", "FE/ML", "Results/Discussion", "Conclusion"])
 
-with tabs[0]: # Starting the IDA tab
+with tabs[0]:
+    st.write("# Introduction")
+    st.write("##### I am a huge NFL fan and I love watching games with my friends. People can get very emotional when watching a game especially when their favorite team is playing. Often times, this leads to very big reactions when something positive or negative happens during the game including penalties. I have always wondered, when a friend of mine starts kicking and screaming on the floor after a penalty is called against his team is this an overreaction or is there some merit to his reaction. My goal for this project is to explore the impact of penalties on a teams chances of winning. To do this I will investigate the impact of penalties on winning indivudually and compared to other metrics that may contribute to winning. ")
+    st.write("##### The purpose of this app is to educate people on whether penalties actually have a significant affect on a teams chances of winning. It goes through the process of using data to find an answer to this question. This information can be used any time you encounter someone claiming that a penalty is the reason their team is going to lose.")
+    st.write("##### In these next sections I will cover my initial data analysis, exploratory data analysis, feature engineering and machine learning, discuss the results, and wrap things up with a conclusion. Please go through the tabs from left to right to follow the flow of the project from start to finish.")
 
-    st.write("## IDA")
+with tabs[1]: # Starting the IDA tab
+
+    st.write("# IDA")
 
     st.write("### Data Sets")
-    st.write("##### The first step of this project was reading in both of the data sets.")
+    st.write("##### The first step of this project was reading in all three of the data sets.")
     st.write("##### This data set has team statistics for every year and every team for the years 2003-2023.")
     st.dataframe(stats.head())
     st.write("##### This data set has penalty totals for each game from 2009-2022.")
     st.dataframe(flags_orignal.head())
-    st.write("### Data Cleaning")
-    st.write("##### The goal is to combine these two data sets so that we have penalty and stat totals for each team from each season spanning from 2003-2023. The first step is changing the flags data set from per game to per season and by team. To do this the home team data needs to be separated from the away team data making two different data sets. Then the numerical columns should be grouped by team and year summing all the numerical columns. This left me with two datasets each having penalty sums for each team in each year. The last step was adding together the home team and away team datasets to get full season totals. The resulting dataset included team penalty totals for each year as shown below:")
+    st.write("##### This dataset shows which teams won the superbowl from 2003-2023.")
+    st.dataframe(superbowls.head())
+    st.write("### Data Processing/Transformation")
+    st.write("##### The goal is to combine the first two data sets so that we have penalty and stat totals for each team from each season spanning from 2003-2023. The first step is changing the flags data set from per game to per season and by team. To do this the home team data needs to be separated from the away team data making two different data sets. Then the numerical columns should be grouped by team and year summing all the numerical columns. This left me with two datasets each having penalty sums for each team in each year. The last step was adding together the home team and away team datasets to get full season totals. The resulting dataset included team penalty totals for each year as shown below:")
     st.dataframe(flags.head())
-    st.write("##### The next step was combining the two datasets by team and year. The year had the same format in both data sets but the teams names were different. There was an additional level of complexity here because some teams have changed names and locations over the time period that our data is from. This means some teams had up to 5 different names over this span of time. For this reason the names in both data sets needed to be standardized before the data sets could be combined.")
+    st.write("##### The next step was combining the first two datasets by team and year. The year had the same format in both data sets but the teams names were different. There was an additional level of complexity here because some teams have changed names and locations over the time period that our data is from. This means some teams had up to 5 different names over this span of time. For this reason the names in both data sets needed to be standardized before the data sets could be combined.")
 
     # Compacting team naming system 
     name_map = {
@@ -88,7 +98,7 @@ with tabs[0]: # Starting the IDA tab
     st.write("##### Type or select any version of a team name — historical or short — and get the standardized full name. Make sure to capitalize the team name you use.")
 
     # Adding a dropdown or free text input
-    user_input = st.text_input("Enter a team name:", placeholder="e.g. NY Jets, Oakland, Washington Redskins")
+    user_input = st.text_input("Enter a team name (Make sure it is capitalized):", placeholder="e.g. NY Jets, Oakland, Washington Redskins")
 
     if user_input:
         normalized = name_map.get(user_input.strip(), "Unknown Team")
@@ -99,15 +109,15 @@ with tabs[0]: # Starting the IDA tab
     with st.expander("Show all standardized team names"):
         st.write(sorted(set(name_map.values())))
 
-    st.write("##### After combining the two data sets this is what the result looks like.")
+    st.write("##### After combining the first two data sets this is what the result looks like.")
     st.dataframe(merged_df.head())
     st.write("### Data Imputation")
-    st.write("##### Now that the two data sets have been combined there are many rows with missing values. This is because the stats dataset covers years from 2003-2023 while the flags dataset only goes from 2009-2022. To fix this I will use stochastic regression to impute the missing values. This will allow for the data to be imputed accurately while still having same variance. The standard deviation of the imputed columns are as follows: Accepted_Penalty_Count residual std = 5.9150, Penalty_Yards residual std = 52.3693, Team_Penalty_Count residual std = 4.1602, Team_Penalty_Yards residual std = 38.1223. After imputation the data set looks like this and it is ready for EDA.")
+    st.write("##### Now that the first two data sets have been combined there are many rows with missing values. This is because the stats dataset covers years from 2003-2023 while the flags dataset only goes from 2009-2022. To fix this I will use stochastic regression to impute the missing values. This will allow for the data to be imputed accurately while still having same variance. The standard deviation of the imputed columns are as follows: Accepted_Penalty_Count residual std = 5.9150, Penalty_Yards residual std = 52.3693, Team_Penalty_Count residual std = 4.1602, Team_Penalty_Yards residual std = 38.1223. After imputation the data set looks like this and it is ready for EDA. I also added the Superbowl Champion column from the superbowls data set to the final data frame to use for visualization")
     st.dataframe(merged_df_imputed.head())
 
-with tabs[1]:
-    st.write("## EDA")
-    st.write("##### In this section I will explore the data using a variety of plots. All plots will be shown here regardless of if they turn out to be useful for answering the overarching project question or not. The plots that turn out to be the most relevant will be used in the discussion section.")
+with tabs[2]:
+    st.write("# EDA")
+    st.write("##### In this section I will explore the data using a variety of plots. All plots will be shown here regardless of if they turn out to be useful for answering the overarching project question or not. The plots that turn out to be the most relevant will be used in the results/discussion section.")
 
     st.write("##### When doing exploratory data analysis I always like to start by looking at a correlation matrix to see where I might be able to find relationships within the data. As you can see here, the penalty variables have very small correlations with all the other variables so finding obvious relationships may be a difficult task. For this correlation matrix there are a lot of variables and the small size makes it hard to read. To help with this you can hover your cursor over the matrix and it will tell you the variables you are hovering over and their correlation.")
     # Computing correlation matrix
@@ -407,7 +417,7 @@ with tabs[1]:
     else:
         st.warning("Please select at least one team to display the boxplot.")
 
-    st.write("##### This plot shows the scatter plot comparing wins and team penalty yards. The unique thing about this plot is that it highlights all of the super bowl winners. The super bowl winner is considered to be one of the best teams from each season so this plot helps highlight how the best teams differ from all the other teams. You can choose which super bowl winner to display by choosing the year that each champion won.")
+    st.write("##### This plot shows the scatter plot comparing wins and team penalty yards. The unique thing about this plot is that it highlights all of the super bowl winners. The super bowl winner is considered to be one of the best teams from each season so this plot helps highlight how the best teams differ from all the other teams. You can choose which super bowl winners to display by choosing the year that each champion won.")
     # Super Bowl winners data 
     super_bowl_winners = [
         {"Year": 2003, "Team": "Tampa Bay Buccaneers", "SuperBowl_Winner": 1},
@@ -475,13 +485,88 @@ with tabs[1]:
 
     st.pyplot(fig)
 
+with tabs[3]:
 
-with tabs[2]:
+    importances_df1 = pd.read_csv("importances_df1.csv")
+    importances_df2 = pd.read_csv("importances_df2.csv")
+
+    st.write("# Feature Engineering and Machine Learning")
+    st.write("### Feature Engineering")
+    st.write("##### For feature engineering I created a few new variables that could help in predicting a teams wins. The first of which is passing yards per attempt (passing yards/passing attempts). This new variable is good for expressing how efficient the pass game is for an offense. The second was Rushing yards per attempt (rushing yards/rushing attempts). This new variable is good for expressing how efficient the running game is for an offense. The third was total touchdowns (passing touchdowns + rushing touchdowns) and the fourth was total first downs (passing first downs + rushing first downs). These new variables are good for looking at the success of an offense as a whole rather than the passing and rushing games individually.")
+    st.write("##### I also conducted data encoding. The only categorical variable I have in the data is the team name. In order to include this variable in the machine learning models it had to be converted into a form that is digestible for the models. This added a column to the data set for each team and included a value of true or false based on whether that row belonged to that team or not. This way the categorical variable could be treated like a numerical variable.")
+    st.write("##### Below is a snapshot of the dataframe that includes all of the engineered features:")
+    st.dataframe(engineered_features.head())
+
+    st.write("### Machine Learning")
+    st.write("##### After conducting EDA I was able to see that there is a small relationship between between winning and penalty yards. The question now is how much of a relationship is there. The goal of this section is to quantify that relationship into a numeric value that can tell us exactly how much penalty yards affects winning compared to the other stats.")
+    st.write("#### Linear regression:")
+    st.write("##### I fit a linear regression model using the entire data set to see how much penalty yards contributed to predicting wins. When scaled to help with comparability, the coefficient for penalty yards was 0.0247. Since it was scaled this means that for every 40 standard deviations in penalty yards you should expect to see an increase of one win. This means that based on the Linear model, penalty yards have little to no affect on winning.")
+    st.write("#### Random Forest/Gradient Boosted Regressor:")
+    st.write("##### The results of the Random Forest and Gradient Boosted Regressor models were very similar so I will show their results here. The random forest model found that penalty yards had a 0.003993% affect on predicting wins in the model. Similarly the Gradient Boosted Regressor model found that penalty yards had a 0.003115% affect on predicting wins in the model. These percent values indicated what number of trees that the model created, included penalty yards on them. Since these numbers are so low they indicate that the penalty yards has little to no affect on predicting wins.")
+    st.write("##### The plots below show the importance of each variable in the models. Take note that I used a log scale for this plot because one variable dominate all of the rest making it hard to see a difference between the rest of the variables on the plot. The red line highlights our variable of interest penalty yards. As you can see penalty yards ranks somewhere in the middle of the plot indicating that there are worse variables in terms of importance but considering the log scale none of them have a significant importance except for the top variable.")
+
+    # Sort importance values
+    importances_sorted = importances_df1.sort_values(by="Importance", ascending=False)
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(10, 14))
+
+    # Colors: highlight penalty yards
+    colors = ["red" if feat == "Team_Penalty_Yards" else "gray" 
+              for feat in importances_sorted["Feature"]]
+
+    # Plot
+    ax.barh(importances_sorted["Feature"], importances_sorted["Importance"], color=colors)
+    ax.invert_yaxis()  # largest at top
+    ax.set_xscale("log")  # log scale
+
+    # Formatting
+    ax.set_yticks(range(len(importances_sorted)))
+    ax.set_yticklabels(importances_sorted["Feature"], fontsize=10)
+
+    ax.set_title("Feature Importances for Random Forest Model (Log Scale)", fontsize=14)
+    ax.set_xlabel("Importance (log scale)")
+    ax.set_ylabel("Feature")
+
+    plt.tight_layout()
+
+    # Streamlit display
+    st.pyplot(fig)
+
+    # Sort importance values
+    importances_sorted = importances_df2.sort_values(by="Importance", ascending=False)
+
+   # Create figure
+    fig, ax = plt.subplots(figsize=(10, 14))
+
+    # Colors: highlight penalty yards
+    colors = ["red" if feat == "Team_Penalty_Yards" else "gray" 
+              for feat in importances_sorted["Feature"]]
+
+    # Plot
+    ax.barh(importances_sorted["Feature"], importances_sorted["Importance"], color=colors)
+    ax.invert_yaxis()  # largest at top
+    ax.set_xscale("log")  # log scale
+
+    # Formatting
+    ax.set_yticks(range(len(importances_sorted)))
+    ax.set_yticklabels(importances_sorted["Feature"], fontsize=10)
+
+    ax.set_title("Feature Importances for Random Forest Model (Log Scale)", fontsize=14)
+    ax.set_xlabel("Importance (log scale)")
+    ax.set_ylabel("Feature")
+
+    plt.tight_layout()
+
+    # Streamlit display
+    st.pyplot(fig)
+
+with tabs[4]:
     # showing the dataframe
+    st.write("# Results/Discussion")
     st.write("### Dataset Preview")
-    st.write("##### This dataset includes team metrics for full seasons. Each row in the dataset includes information for one team for one year. This data will be used to see how penalties during a season impacts a teams outcome.")
+    st.write("##### This is the final dataset after conducting IDA. Each row in the dataset includes information for one team for one year. This is the data that was used to see how penalties during a season impacts a teams outcome.")
     st.dataframe(merged_df_imputed.head())
-    st.write("##### The next step was combining the two datasets by team and year")
 
     # making a correlation plot for wins and penalty yards
     x = merged_df_imputed['wins']
@@ -715,4 +800,12 @@ with tabs[2]:
 
     # displaying figure
     st.pyplot(fig)
+
+    st.write("##### The results of the Machine Learning models show that penalty yards have about 0.0035% importance in predicting wins when all possible variables are considered. This suggests that while the relationship between penalty yards and wins does exist it is obviously not a direct relationship. The variable with the highest importance in the machine learning model was point differential. Penalty yards is connected to point differential through a series of factors. Penalty yards contributes to a teams total yards, a teams total yards contributes to how many points a team scores, and how many points a team scores contributed to the teams point differential. This is a helpful way of thinking about why penalty yards has such a small impact on winning. There are a lot a variables that are in effect during a football game and penalty yards is just one of them. So while there may be a connection between penalty yards and winning this connection is a very distant one.")
+
+with tabs[5]:
+    st.write("# Conclusion")
+    st.write("##### In conclusion, it turns out that penalties on their own do not have a significant impact on teams chances of winning. There are a lot of factors that go into winning a football game. Penalties are a very small portion of what goes on during a football game. Also, both teams get penalized so penalty yards often cancel each other out or get close to even by the end of the game. I have found that for these reasons penalties do not have any significant impact on winning a football game. So, next time one of my friends throws a fit over a penalty during a football game I will show them this data and remind them that it really doesn't matter and that they should probably spend their time worrying about other things.")
+
+
 
