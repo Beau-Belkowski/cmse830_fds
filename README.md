@@ -5,13 +5,29 @@ Link to streamlit app: https://nflpenalties.streamlit.app/
 
 What each file is and how to use it:
 
-CMSE_830_Midtern_Project.ipynb: This is the main jupyter notebook file for the project. All of the IDA, EDA, and streamlit app construction is done in this file. Not all of the IDA and EDA is shown in the streamlit app. In order to run it properly CMSE_830_Midterm_dataset1.csv and CMSE_830_Midterm_dataset2.csv must be able to be loaded into this file. This file outputs merged_df_imputed.csv and app.py. I used python kernal version 3.12 (ipykernal) to run this code.
+CMSE_830_Final_Project.ipynb: This is the main jupyter notebook file for the final project. All of the IDA, EDA, Data Processing, Feature Engineering, Machine Learning and streamlit app construction is done in this file. In order to run it properly CMSE_830_Midterm_dataset1.csv and CMSE_830_Midterm_dataset2.csv must be able to be loaded into this file. This file outputs merged_df_imputed.csv, app.py, and several other csv files used for the streamlit app. I used python kernal version 3.12 (ipykernal) to run this code.
+
+CMSE_830_Midtern_Project.ipynb: This is the main jupyter notebook file for the midterm project. All of the IDA, EDA, and streamlit app construction is done in this file. Not all of the IDA and EDA is shown in the streamlit app. In order to run it properly CMSE_830_Midterm_dataset1.csv and CMSE_830_Midterm_dataset2.csv must be able to be loaded into this file. This file outputs merged_df_imputed.csv and app.py. I used python kernal version 3.12 (ipykernal) to run this code.
 
 CMSE_830_Midterm_dataset1.csv: One of the csv files used to conduct the data analysis. Should be saved in same file as CMSE_830_Midtern_Project.ipynb so it can be loaded into the jupyter notebook. https://www.kaggle.com/datasets/nickcantalupa/nfl-team-data-2003-2023
 
 CMSE_830_Midterm_dataset2.csv: One of the csv files used to conduct the data analysis. Should be saved in same file as CMSE_830_Midtern_Project.ipynb so it can be loaded into the jupyter notebook. https://www.kaggle.com/datasets/mattop/nfl-penalties-data-2009-2022-season?select=games.csv
 
 merged_df_imputed.csv: This is the final dataframe used for the project. CMSE_830_Midtern_Project.ipynb creates and exports this csv file at the end of the notebook so it can be used in app.py for creating the streamlit app
+
+engineered_features.csv: This dataset includes all of the variables used to fit the machine learning models. This includes all of the origional variables included in the merged_df_imputed file and the newly engineered features. This dataset is included in this repository separatley to make running the streamlit app more efficient.
+
+flags.csv: This dataset includes the cleaned version of CMSE_830_Midterm_dataset1.csv. This file is included in the reporitory so it could be shown in the streamlit app as a snapshot of the dataframe to show what the data looked like after it had been cleaned.
+
+stats.csv: This dataset includes the cleaned version of CMSE_830_Midterm_dataset2.csv. This file is included in the reporitory so it could be shown in the streamlit app as a snapshot of the dataframe to show what the data looked like after it had been cleaned.
+
+superbowls.csv: This is the third unique data frame that I used for this project. It includes a row for each team from each season from 2003-2023. This file is included in the reporitory so it could be shown in the streamlit app as a snapshot of the dataframe to show what the data looked like.
+
+merged_df.csv: This data frame has all of the merged data before the missing values were imputed. This file is included in the reporitory so it could be shown in the streamlit app as a snapshot of the dataframe to show what the data looked like before it was imputed.
+
+importances_df1.csv: This data frame includes all of the importances for the variables included in the Random forest model. This data frame is included in the repository to make it easier to plot the importances in the Machine Learning section of the project.
+
+importances_df2.csv: This data frame includes all of the importances for the variables included in the Gradient Boosted Regressor model. This data frame is included in the repository to make it easier to plot the importances in the Machine Learning section of the project.
 
 app.py: This file contains all of the code for the streamlit app. CMSE_830_Midtern_Project.ipynb creates and runs this streamlit app at the end of the notebook.
 
